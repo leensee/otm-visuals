@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneTrackMind — Build Roadmap</title>
+<style>
+  :root {
+    --color-background-primary: #fff;
+    --color-background-secondary: #f5f5f0;
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #6b6b68;
+    --color-text-tertiary: #9c9a92;
+    --color-border-tertiary: rgba(0,0,0,0.12);
+    --color-border-secondary: rgba(0,0,0,0.25);
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+  }
+  @media(prefers-color-scheme:dark){
+    :root {
+      --color-background-primary: #1e1e1c;
+      --color-background-secondary: #2a2a28;
+      --color-text-primary: #e8e6de;
+      --color-text-secondary: #a8a69e;
+      --color-text-tertiary: #73726c;
+      --color-border-tertiary: rgba(255,255,255,0.12);
+      --color-border-secondary: rgba(255,255,255,0.25);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: var(--color-background-secondary); padding: 24px 16px; }
+  .rm { max-width: 680px; margin: 0 auto; }
+  .progress-bar { display: flex; gap: 3px; margin-bottom: 20px; }
+  .progress-seg { height: 6px; flex: 1; border-radius: 3px; cursor: pointer; transition: opacity 0.15s; }
+  .progress-seg:hover { opacity: 0.8; }
+  .progress-seg.done { background: #97C459; }
+  .progress-seg.active { background: #EF9F27; }
+  .progress-seg.future { background: var(--color-border-tertiary); }
+  .legend { display: flex; gap: 14px; margin-bottom: 16px; font-size: 11px; color: var(--color-text-tertiary); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+  .phase-list { display: flex; flex-direction: column; gap: 2px; }
+  .phase { cursor: pointer; border-radius: var(--border-radius-md); overflow: hidden; transition: transform 0.12s; }
+  .phase:hover { transform: scale(1.005); }
+  .phase.open { transform: scale(1.01); }
+  .phase-header { display: flex; align-items: center; padding: 9px 12px; gap: 10px; }
+  .phase-dot { width: 10px; height: 10px; min-width: 10px; border-radius: 50%; }
+  .phase-dot.done { background: #639922; }
+  .phase-dot.active { background: #EF9F27; }
+  .phase-dot.future { background: var(--color-border-secondary); }
+  .phase-num { font-size: 11px; color: var(--color-text-tertiary); min-width: 14px; }
+  .phase-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
+  .phase-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  .phase-badge.done { background: #EAF3DE; color: #27500A; }
+  .phase-badge.active { background: #FAEEDA; color: #633806; }
+  .phase-badge.future { background: var(--color-background-secondary); color: var(--color-text-tertiary); }
+  .phase-detail { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; font-size: 12px; line-height: 1.65; color: var(--color-text-secondary); padding: 0 12px 0 36px; border-radius: 0; }
+  .phase.open .phase-detail { max-height: 500px; padding: 0 12px 10px 36px; }
+  .phase-detail .why { font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 3px; }
+  .phase-detail ul { padding-left: 16px; margin: 0 0 8px; }
+  .phase-detail li { margin: 1px 0; }
+  .phase-detail .dep { font-size: 11px; color: var(--color-text-tertiary); margin-top: 4px; }
+  .phase-bg-done { background: #EAF3DE; }
+  .phase-bg-active { background: #FAEEDA; }
+  .phase-bg-future { background: var(--color-background-secondary); }
+  @media(prefers-color-scheme:dark){
+    .phase-badge.done { background: #27500A; color: #C0DD97; }
+    .phase-badge.active { background: #633806; color: #FAC775; }
+    .phase-bg-done { background: rgba(151,196,89,0.1); }
+    .phase-bg-active { background: rgba(239,159,39,0.1); }
+    .phase-bg-future { background: var(--color-background-secondary); }
+    .progress-seg.future { background: var(--color-border-secondary); }
+  }
+</style>
+</head>
+<body>
+<div class="rm">
+  <div class="progress-bar" id="pbar"></div>
+  <div class="legend">
+    <span><span class="legend-dot" style="background:#97C459;"></span>Complete</span>
+    <span><span class="legend-dot" style="background:#EF9F27;"></span>In progress</span>
+    <span><span class="legend-dot" style="background:var(--color-border-secondary);"></span>Upcoming</span>
+  </div>
+  <div class="phase-list" id="phases"></div>
+</div>
+
+<script>
+const phases = [
+  { num:0, name:"Set up the shop", status:"done", badge:"complete",
+    why:"Before you build anything, you need a workspace with the right equipment.",
+    pts:["Development environment configured — all the platforms, frameworks, and hosting needed to build and run the system","Code repository set up and structured for the full project","Cloud database, authentication, and push notification services provisioned","Everything verified and working end to end before any real building starts"],
+    dep:null },
+  { num:1, name:"Pour the foundation", status:"active", badge:"in progress",
+    why:"The rules, the architecture, and the identity of the system have to be defined before a single line of working code makes sense.",
+    pts:["Core infrastructure standard — the non-negotiable rules every edition follows: evidence standard, safety, output quality, communications, monitoring, prohibitions","System overview — how the seven layers connect and what each one does","Edition profile — everything specific to you: identity, role, contacts, tone, fleet, workflow, data schema","System prompt architecture — translating all of the above into instructions the AI model actually follows","Database schema design — defining the exact structure of every table the system will use"],
+    dep:null },
+  { num:2, name:"Hire the supervisor", status:"future", badge:"upcoming",
+    why:"Nothing else can function correctly without the layer that coordinates everything and enforces the rules.",
+    pts:["Build the orchestration logic that applies your rules and profile to every input","Programmatic self-audit — the system checks its own work before anything reaches you","Approval gate architecture — nothing leaves without your sign-off","Routing logic — determines which tools, which tone, which contacts apply to each situation"],
+    dep:"Requires: foundation complete" },
+  { num:3, name:"Stock the toolbox", status:"future", badge:"upcoming",
+    why:"The supervisor needs tools to assign. Without them, the system can think but can't do.",
+    pts:["Database read/write tools — query and log to fleet, inventory, time logs, expenses, PM schedules","Source cards and order cards — vendor comparison and quick-reference ordering","Expense parser — turns receipt photos into structured entries","Spec and manual tools — stores, retrieves, and references serial-specific docs; drafts formal requests for missing ones","Report and export tools — generates sheets and Excel files for access outside the system"],
+    dep:"Requires: orchestration working" },
+  { num:4, name:"Set up dispatch", status:"future", badge:"upcoming",
+    why:"The system needs to read and write across SMS and email — both directions — with real triage, not just forwarding.",
+    pts:["Bidirectional SMS through Twilio — send and receive, threaded, compressed for text","Multi-inbox email through Gmail API — read, triage, draft replies, maintain threads","Inbound triage engine — categorize every message, verify the sender, assess urgency","Outbound drafting in your voice — right tone for the right person, right format for the channel","Approval gating on every outbound — you see the full draft before it sends","Comms log — every sent message and every triage action is recorded"],
+    dep:"Requires: tools available for the comms layer to use" },
+  { num:5, name:"Install the gauges", status:"future", badge:"upcoming",
+    why:"The system needs to watch the data and reach out to you proactively — not wait for you to ask.",
+    pts:["Continuous scan of fleet status, parts orders, admin tasks, messages, PM schedules","Push trigger logic — complex reasoning to determine what needs your attention now vs. what can wait","Pull item surfacing at session open — non-urgent flags offered up front, skippable, worked in contextually","Push delivery to your devices via standard notification and SMS","Digest — after a configurable period of inactivity (default 8 hours), a curated summary of unresolved items pushes to all your active devices","Information gap detection — surfaces missing data instead of ignoring or guessing"],
+    dep:"Requires: data layer and comms layer operational" },
+  { num:6, name:"Build the cab", status:"future", badge:"upcoming",
+    why:"This is where you actually sit. Everything else was built so this layer could be simple.",
+    pts:["User-facing interface — the app you open on your phone, tablet, or browser","Natural language input and formatted output by destination — you talk, the system handles the rest","Voice pipeline — wake word, speech-to-text, text-to-speech for hands-free field use (fault tolerance and offline fallback must be resolved first)","Onboarding guide — written in your assistant's voice, not a user manual; accessible from settings or by asking","Settings surface — configurable options available both in-app and by asking your assistant directly","Phone (iOS + Android) and web first; tablet features follow"],
+    dep:"Requires: all backend layers functional" },
+  { num:7, name:"Connect the service records", status:"future", badge:"upcoming",
+    why:"The databases need to be live and connected — with session persistence and historical data fully structured.",
+    pts:["Live cloud database connection (Supabase) syncing with local on-device storage (SQLite)","Session context loading — the system picks up where you left off with full state, not a cold start","Historical log structure — repair history, diagnostic outcomes, comms history all queryable","Sheets and Excel generated on demand as export surfaces — not data sources"],
+    dep:"Requires: interface and tools layer ready to read/write" },
+  { num:8, name:"Shake it down", status:"future", badge:"upcoming",
+    why:"Before it goes live, the system runs through real-world scenarios to prove every rule holds under pressure.",
+    pts:["Field-representative test scenarios — based on actual situations from your role","Evidence standard enforcement — does the system fabricate under any condition? (answer must be: no)","Safety redline behavior — do flags fire correctly, clearly, and first?","Communications gate — does anything send without approval under any scenario?","Push/pull accuracy — are the right things pushing and the right things pulling?","Notification calibration — is the system learning what matters to you specifically?"],
+    dep:"Requires: full system assembled" },
+  { num:9, name:"Hand over the keys", status:"future", badge:"upcoming",
+    why:"Deploy to you. Monitor. Refine. The system gets better from here.",
+    pts:["Deploy to your devices — phone, tablet, web","Real-world use with real data, real messages, real fleet","Monitor for issues — evidence standard violations, triage accuracy, push/pull balance","Refine based on your feedback and the system's evolving profile of your priorities"],
+    dep:"Requires: testing complete" },
+  { num:10, name:"Next edition", status:"future", badge:"upcoming",
+    why:"The whole point of the layered architecture — the next person doesn't start from scratch.",
+    pts:["Decide who the next edition is built for — could be a supervisor, a different field role, or a different industry entirely","Same core infrastructure, same seven layers, new profile on top tailored to that person's role, contacts, workflow, and operational context","The edition profile template already exists — needs intake with the next user to populate the role-specific details","Proves the system is repeatable and scalable, not a one-off built for one person"],
+    dep:"Requires: OTM v1 stable" }
+];
+
+const pbar = document.getElementById('pbar');
+const plist = document.getElementById('phases');
+let openPhase = -1;
+
+phases.forEach((p,i) => {
+  const seg = document.createElement('div');
+  seg.className = 'progress-seg ' + p.status;
+  seg.onclick = () => toggle(i);
+  pbar.appendChild(seg);
+
+  const bgClass = p.status === 'done' ? 'phase-bg-done' : p.status === 'active' ? 'phase-bg-active' : 'phase-bg-future';
+  const badgeClass = p.status === 'done' ? 'done' : p.status === 'active' ? 'active' : 'future';
+
+  const div = document.createElement('div');
+  div.className = 'phase ' + bgClass;
+  div.id = 'ph-' + i;
+  div.innerHTML = `
+    <div class="phase-header" onclick="toggle(${i})">
+      <div class="phase-dot ${p.status}"></div>
+      <span class="phase-num">${p.num}</span>
+      <span class="phase-name">${p.name}</span>
+      <span class="phase-badge ${badgeClass}">${p.badge}</span>
+    </div>
+    <div class="phase-detail">
+      <div class="why">${p.why}</div>
+      <ul>${p.pts.map(pt => '<li>' + pt + '</li>').join('')}</ul>
+      ${p.dep ? '<div class="dep">' + p.dep + '</div>' : ''}
+    </div>`;
+  plist.appendChild(div);
+});
+
+function toggle(i) {
+  const prev = openPhase;
+  if (prev >= 0) document.getElementById('ph-' + prev).classList.remove('open');
+  if (prev !== i) { document.getElementById('ph-' + i).classList.add('open'); openPhase = i; }
+  else { openPhase = -1; }
+}
+</script>
+</body>
+</html>

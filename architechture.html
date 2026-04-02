@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneTrackMind — Architecture & Why</title>
+<style>
+  :root {
+    --color-background-primary: #fff;
+    --color-background-secondary: #f5f5f0;
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #6b6b68;
+    --color-text-tertiary: #9c9a92;
+    --color-border-tertiary: rgba(0,0,0,0.12);
+    --color-border-secondary: rgba(0,0,0,0.25);
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+  }
+  @media(prefers-color-scheme:dark){
+    :root {
+      --color-background-primary: #1e1e1c;
+      --color-background-secondary: #2a2a28;
+      --color-text-primary: #e8e6de;
+      --color-text-secondary: #a8a69e;
+      --color-text-tertiary: #73726c;
+      --color-border-tertiary: rgba(255,255,255,0.12);
+      --color-border-secondary: rgba(255,255,255,0.25);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: var(--color-background-secondary); padding: 24px 16px; }
+  .w { max-width: 680px; margin: 0 auto; }
+  .sec-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-text-tertiary); margin: 0 0 8px; }
+  .layer-stack { display: flex; flex-direction: column; gap: 2px; }
+  .layer { display: flex; align-items: stretch; cursor: pointer; border-radius: var(--border-radius-md); overflow: hidden; transition: transform 0.12s; }
+  .layer:hover { transform: scale(1.008); }
+  .layer.active { transform: scale(1.015); }
+  .layer-num { width: 32px; min-width: 32px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: #fff; }
+  .layer-bar { flex: 1; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; }
+  .layer-name { font-size: 13px; font-weight: 500; }
+  .layer-tag { font-size: 11px; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+  .flow-arrow { text-align: center; font-size: 11px; color: var(--color-text-tertiary); padding: 0; margin-left: 32px; line-height: 1.2; }
+  .detail-panel { overflow: hidden; max-height: 0; transition: max-height 0.35s ease; font-size: 12px; line-height: 1.6; color: var(--color-text-secondary); margin-left: 32px; border-left: 3px solid transparent; border-radius: 0; }
+  .detail-panel.open { max-height: 700px; padding: 8px 12px; }
+  .detail-panel h4 { font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 4px; }
+  .detail-panel ul { padding-left: 16px; margin: 2px 0 0; }
+  .detail-panel li { margin: 2px 0; }
+  .divider { height: 0.5px; background: var(--color-border-tertiary); margin: 20px 0 16px; }
+  .wa-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .wa-btn { padding: 6px 12px; border-radius: var(--border-radius-md); font-size: 12px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); transition: all 0.15s; }
+  .wa-btn:hover { background: var(--color-background-secondary); }
+  .wa-btn.active { background: #FCEBEB; color: #791F1F; border-color: #F09595; }
+  .wa-panel { border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); overflow: hidden; }
+  .wa-content { padding: 14px 16px; }
+  .wa-content h4 { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 6px; }
+  .wa-sub { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 12px; line-height: 1.5; }
+  .wa-cols { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+  .wa-col { padding: 10px 12px; border-radius: var(--border-radius-md); font-size: 12px; line-height: 1.6; }
+  .wa-col ul { padding-left: 14px; margin: 4px 0 0; }
+  .wa-col li { margin: 1px 0; }
+  .wa-col.solves { background: #EAF3DE; color: #27500A; }
+  .wa-col.fails { background: #FCEBEB; color: #791F1F; }
+  .wa-col-label { font-size: 11px; font-weight: 500; margin-bottom: 2px; }
+  .wa-col.solves .wa-col-label { color: #3B6D11; }
+  .wa-col.fails .wa-col-label { color: #A32D2D; }
+  .wa-fix { margin-top: 10px; padding: 8px 12px; border-radius: var(--border-radius-md); background: var(--color-background-secondary); font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; }
+  .wa-fix strong { font-weight: 500; color: var(--color-text-primary); }
+  .bottom-card { margin-top: 16px; padding: 14px 16px; border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); }
+  .bottom-card h4 { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 6px; }
+  .bottom-card p { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; margin: 0; }
+  @media(prefers-color-scheme:dark){
+    .wa-btn.active { background: #501313; color: #F7C1C1; border-color: #791F1F; }
+    .wa-col.solves { background: #27500A; color: #C0DD97; }
+    .wa-col.fails { background: #501313; color: #F7C1C1; }
+    .wa-col.solves .wa-col-label { color: #97C459; }
+    .wa-col.fails .wa-col-label { color: #F09595; }
+  }
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="sec-label">The OTM system — seven layers</div>
+  <div class="layer-stack" id="stack"></div>
+
+  <div class="divider"></div>
+
+  <div class="sec-label">Why not just use a better AI setup?</div>
+  <div style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 10px; line-height: 1.5;">Every one of these is something people actually try. Each one fixes part of the problem and breaks something else. Tap each one.</div>
+  <div class="wa-grid" id="wa-btns"></div>
+  <div class="wa-panel" id="wa-panel" style="display:none;"></div>
+
+  <div class="bottom-card">
+    <h4>The real point</h4>
+    <p>Each workaround patches one leak but springs another. OTM doesn't patch — it builds the whole machine from the ground up so every part is designed to work with the others. The AI model is the engine and controls. But an engine and ECM sitting on the floor don't move rail. You need the supervisor running the job, dispatch routing the calls, the right tools on hand, gauges you can trust, and service records that don't lie. That's what turns a piece of technology into a machine that actually works for you.</p>
+  </div>
+</div>
+
+<script>
+const layers = [
+  { num:"1", name:"The cab", tag:"interface", color:"#534AB7", fill:"#EEEDFE", tc:"#3C3489", tbg:"#CECBF6", ttc:"#26215C",
+    title:"Where you sit. Where you talk. Where you drive.", pts:["You describe what happened, what you need, or what to draft — plain language, no menus, no clicking around","Output comes back formatted for wherever it's going: shift report, text message, email, expense log","When you open up, the system shows you what needs attention — fleet status, messages, flags — like walking up to the board and seeing what's on for the day","You never open a spreadsheet, search a folder, or navigate anything. The system does the digging. You do the deciding."] },
+  { num:"2", name:"The supervisor", tag:"orchestration", color:"#0F6E56", fill:"#E1F5EE", tc:"#085041", tbg:"#9FE1CB", ttc:"#04342C",
+    title:"Gets the info, decides the job, assigns the crew, checks the work", pts:["Takes what comes in from you and from every other layer — dispatch, tools, the monitor, the data — and decides what the actual job is. Not just \"process this input,\" but what needs to happen, in what order, and who handles it.","Figures out whether the job can be done with what's on hand. If something's missing — a fact, a part number, a spec — it stops and asks instead of making it up.","The evidence standard and safety rules aren't suggestions written on a whiteboard. They're built into the supervisor's logic. The engine doesn't get to skip the inspection because it's in a hurry.","Before any output leaves — a report, a draft, a logged entry — a programmatic audit runs: is every fact sourced? Is the reasoning sound? Is anything assumed that should be verified? Is the format right for where it's going? Nothing ships without passing the check."] },
+  { num:"3", name:"Dispatch", tag:"communications", color:"#185FA5", fill:"#E6F1FB", tc:"#0C447C", tbg:"#B5D4F4", ttc:"#042C53",
+    title:"Routes everything coming in and going out — knows who, what, and how urgent", pts:["Reads incoming texts and emails, identifies who sent it, and determines what kind of response is needed — or if one's needed at all","Triages every message: does this need a reply? Should something get logged? Is there a safety concern? Is it just informational? Does it need to reach you right now or can it wait?","Drafts outbound in your voice — knows the difference between how you talk to your boss, a vendor, a dealer, or your crew. Formats for the channel: compressed for text, full format for email.","You always see the full draft before anything sends. Always. Dispatch holds the message until you clear it — no autonomous sends, no exceptions."] },
+  { num:"4", name:"The toolbox", tag:"tools", color:"#993C1D", fill:"#FAECE7", tc:"#712B13", tbg:"#F5C4B3", ttc:"#4A1B0C",
+    title:"Specific, purpose-built tools the supervisor pulls when the job calls for them", pts:["A \"tool\" here is a defined capability the system uses to do a specific job — the same way you reach for a specific wrench or gauge for a specific task. There are database tools (read and write to fleet, inventory, time logs, expenses, PM schedules), output tools (generate reports and exports to sheets or Excel for use outside the system), and parsing tools (break down receipt photos into structured expense entries).","Parts sourcing: when you need a part, the system generates a source card with up to 3 vendor options showing availability, lead time, and cost. Choosing one creates an order card — item name, part number, relevant machine, vendor, account number, contact, lead time, cost, shipping method. If the order can go out by text or email, the system offers to draft it.","Spec and manual tools: sources, stores, and references manuals and specs tied to each machine by serial number. If a manual is missing, the system drafts a formal request to the dealer for your approval.","The supervisor decides which tools to pull. You never have to ask for a specific tool — you describe the job, the system picks the right ones."] },
+  { num:"5", name:"The gauges", tag:"monitor", color:"#854F0B", fill:"#FAEEDA", tc:"#633806", tbg:"#FAC775", ttc:"#412402",
+    title:"Watches everything and tells you what actually matters to you — not just what might matter to someone", pts:["Continuously scans fleet status, parts orders and levels, admin tasks, emails and texts, PM schedules — not waiting for you to come check","Uses complex reasoning to tell the difference between \"this needs your attention right now\" and \"this can wait until you're ready\" — not blanket rules that treat every alert the same way","Gets smarter over time. The system builds a profile of you through continued use — learns what your real priorities look like in practice, what matters to you specifically, and delivers notifications that are meaningful to you, not just generic category alerts","Critical issues push to your device via standard notification or text. When you open a session, non-urgent flags are offered first — but if you need to jump straight into something, skip them. The system works those flags into your session naturally as context allows.","If you've been away for a while, the system sends a digest — a curated summary of only the items that are still unacknowledged or unresolved, pushed to all your active devices. Threshold is configurable — default is 8 hours.","If there's a gap in the data — something missing, something it can't verify — it tells you. It doesn't pretend the gap isn't there and it doesn't fill it in with a guess."] },
+  { num:"6", name:"Engine + controls", tag:"AI model", color:"#5F5E5A", fill:"#F1EFE8", tc:"#444441", tbg:"#D3D1C7", ttc:"#2C2C2A",
+    title:"The power and the processing — but not the machine", pts:["The engine generates the power — language, reasoning, troubleshooting logic, message interpretation. The controls (like an ECM on a diesel) manage how that power is applied — tone, context, format. Together they produce output. But they don't decide what job to run, what tools to pull, or whether the work passes inspection. That's the supervisor's job.","Treating this as swappable infrastructure is one of the biggest advantages of the layered approach. If a better engine comes along — faster, cheaper, sharper at reasoning or diagnostics — it swaps in without rebuilding everything around it. Different models have different strengths: one might reason better through complex problems, another might respond faster, another might cost less to run per shift. You're never locked into one.","The layered approach also means drastically faster load and processing times. An AI platform with connectors, memory, and bolt-ons has to reconstruct everything from scattered sources every time you ask a question — like rebuilding the consist before every job. OTM loads a structured state from its own databases. Purpose-built, pre-organized, ready to go.","Without the other six layers, this engine and controls just sit on the floor. They guess at part numbers, forget everything between conversations, can't read your messages, can't reach you, and have no way to check their own work. That's what a standalone AI platform gives you — a powerful engine with no machine around it."] },
+  { num:"7", name:"Service records", tag:"data", color:"#3B6D11", fill:"#EAF3DE", tc:"#27500A", tbg:"#C0DD97", ttc:"#173404",
+    title:"Structured, typed, queryable, auditable — not just text the AI \"remembers\"", pts:["Nine defined databases in Supabase (cloud) with local-first SQLite on your device: Fleet Master, Inventory, Time Log, Budget Tracker, Expenses, PM Program, Comms Log, Style Observations, and Style Exclusions. Each has a defined schema — specific fields with specific data types and relationships between tables. Not loose text. Structured records — like a properly organized service file vs. a stack of napkins in a drawer.","This is why the system can answer \"what's the PM due date on the KPB 200?\" instantly — it's querying a real database field on a serial-number-keyed record, not searching through old conversations hoping it came up once. Schema means every record has the same structure. Data types mean a date is a date and a dollar amount is a dollar amount — not just words. Querying means the system asks the database a precise question and gets a precise answer.","Every entry is traceable: where the data came from, when it was written, what triggered the write. That's an audit trail. If a number shows up in a report, you can follow it back to the source — the receipt, the log entry, the user input that created it. Platform memory can't do that because it doesn't track where its \"memories\" came from.","Sheets and Excel are output surfaces — generated on demand so you can access, present, or share data outside the system. Think of them as the print shop: the system creates clean, formatted exports from the real data for you to hand off, email, or review on your own. The predecessor used sheets as both the filing cabinet and the print shop, which meant the AI could write bad data right into the same place you were reading from. Now the databases are the source of truth — sheets are just the copies."] }
+];
+
+const workarounds = [
+  { label: "Better prompts & rules",
+    title: "\"I'll just write really good instructions\"",
+    sub: "You can write the most detailed instructions ever put in front of an AI. The model will still drift, make things up, and quietly ignore rules — especially in longer conversations or when the input gets ambiguous. Prompts are requests. They don't have an enforcement mechanism. It's like posting a safety briefing on the wall — some guys will read it, some won't, and nobody's checking before the work leaves.",
+    solves: ["Basic tone and formatting","Simple task instructions","General behavior guidelines"],
+    fails: ["Model still fabricates when data is missing — and sounds confident doing it","Rules get ignored in long sessions as the conversation grows and older instructions fade out","No programmatic check runs before output — it's pure honor system","Can't prevent the model from guessing at part numbers, costs, or serials","No audit trail — you can't go back and prove what rule was applied to what output","Safety rules can be talked around with creative phrasing"],
+    fix: "OTM's <strong>supervisor (orchestration layer)</strong> enforces rules in code — like a supervisor who inspects every job before it ships. A programmatic audit runs before every output: is every fact sourced? Is the reasoning sound? Is anything assumed instead of backed by data? The engine doesn't get to skip the inspection."
+  },
+  { label: "App connectors",
+    title: "\"I'll hook it up to my apps with Zapier or Make\"",
+    sub: "Connectors move data between apps on simple triggers — \"when X happens, do Y.\" They don't understand context, can't assess urgency, don't know who matters, and have no concept of checking whether an action is safe before firing. It's like wiring a sensor to a relay with no logic between them — it'll trip every time, whether the condition is real or not.",
+    solves: ["Basic trigger-action automation (new email shows up, log it)","Moving data between two apps","Simple notifications"],
+    fails: ["Can't triage an inbound text — is it urgent? Does it need a reply? Is it a safety issue?","No sender verification — acts on any input regardless of source","Can't draft a response in your voice for the right person","No safety check on content — a dangerous instruction passes through unchecked","No thread context — every message is treated as isolated, replies make no sense","No approval gate — actions fire automatically with no review step"],
+    fix: "OTM's <strong>dispatch (communications layer)</strong> reads every inbound message, verifies the sender, checks for safety issues, categorizes it by what's actually needed, and drafts responses in your voice for the right recipient. Nothing sends without your explicit approval. Connectors can't think — they just react."
+  },
+  { label: "Platform memory",
+    title: "\"The AI remembers things about me between sessions\"",
+    sub: "Platform memory stores fragments from past conversations as loose, unstructured text. It can't tell the difference between \"Kurt mentioned needing a hydraulic filter\" and \"there are 3 filters verified in stock.\" There's no schema, no data types, no audit trail, and no reliable way to pull back exactly what you need. It's like writing notes on napkins and stuffing them in a drawer — you technically \"saved\" the info, but good luck finding it or trusting it's still right.",
+    solves: ["Remembers your name and basic preferences","Recalls topics from recent conversations","Carries some loose context forward"],
+    fails: ["Can't differentiate a casual mention from a verified data point — treats both as equally reliable","No structured data — can't query \"what's the PM due date on machine #8?\" because there's no field to query","No audit trail — can't trace where a stored \"fact\" originally came from or when","Memory degrades and conflicts pile up over time with no resolution mechanism","Can't track 13 machines with distinct serial numbers, specs, and service histories — too much structured data for unstructured text","A guess gets stored the same as a real count. Next session, the guess is now a \"fact.\""],
+    fix: "OTM's <strong>service records (data layer)</strong> use real databases with defined schemas — specific fields, data types, and relationships. Every machine is keyed by serial number. Every entry has a source and a timestamp. The system queries a typed record for a precise answer — not a best-guess search through old conversation scraps."
+  },
+  { label: "Sheets / database",
+    title: "\"I'll connect it to Google Sheets for storage\"",
+    sub: "Connecting an AI to a spreadsheet gives it somewhere to write. It doesn't give it rules about what to write, when to write, or how to check that what it's writing is real. The AI will log a fabricated part number into your sheet just as happily as a real one — and now your \"source of truth\" has bad data in it that looks legitimate. It's like giving someone a key to the parts room but no training on what goes where or what to verify first.",
+    solves: ["Persistent storage outside the conversation","Basic read/write capability","Data survives between sessions"],
+    fails: ["No write rules — the AI writes fabricated part numbers to your sheet and it looks legit","No verification step before writes — no approval gate on data going in","No schema enforcement — wrong data in wrong columns, duplicates, format drift over time","Can't distinguish \"I should log this\" from \"I should ask first\" — everything gets written","No proactive monitoring — data just sits there, nobody scans it for problems","No query intelligence — can't automatically scan for overdue PMs, low stock, or budget variance"],
+    fix: "OTM separates storage from output. <strong>Databases</strong> (Supabase cloud + SQLite on-device) are the structured source of truth — defined schemas, typed fields, write verification. <strong>Sheets and Excel</strong> are generated on demand as export surfaces — for access, presentation, and sharing outside the system. The AI never writes directly to your readable files. The <strong>gauges (monitor layer)</strong> continuously scan the databases and flag issues proactively. Bad data can't quietly enter the system because writes only happen on verified input."
+  },
+  { label: "All of the above",
+    title: "\"What if I stack ALL of those together?\"",
+    sub: "Combine them all: best possible prompt, Zapier connectors, platform memory, connected sheets. You get something better than a naked model — but still a patchwork of parts that were never designed to work together. Each one has its own failure modes, and they don't cancel out — they compound. It's like bolting aftermarket parts from five different manufacturers onto one machine and hoping the hydraulics, electrical, and pneumatics all play nice.",
+    solves: ["Better than a raw AI model","Some persistence, some automation","Handles basic use cases for simple tasks"],
+    fails: ["Still no proactive monitoring that reaches out to you when something needs attention","Still no intelligent triage on inbound messages — reading a text isn't the same as understanding whether it's urgent for you","Still no programmatic safety enforcement — every rule is still a suggestion the model can ignore","Still no approval architecture — things either fire automatically or don't happen at all","Still no channel-aware output — same format whether it's a shift report, a text, or an email to your boss","Still no copy-paste-ready standard — you're always editing before you can use it","Still no structured audit trail — can't trace what data informed what output","Still no digest — if you're away for 8 hours, nothing curates what's still unresolved and pushes it to you","Still no information gap detection — missing data gets ignored or silently filled with a guess","Every bolt-on has its own failure modes, and layering them creates new ones where they interact"],
+    fix: "OTM isn't these things duct-taped together. It's a <strong>purpose-built system</strong> where every layer has a defined job and defined interfaces to the layers around it. The supervisor coordinates and audits. Dispatch routes and gates. The gauges watch and notify. The toolbox executes with verification. The service records store with structure and traceability. They work together because they were built together — not bolted on after the fact."
+  }
+];
+
+const stack = document.getElementById('stack');
+let openLayer = -1;
+layers.forEach((l,i) => {
+  const d = document.createElement('div');
+  d.innerHTML = `<div class="layer" id="layer-${i}" onclick="toggleLayer(${i})" style="background:${l.fill}">
+    <div class="layer-num" style="background:${l.color}">${l.num}</div>
+    <div class="layer-bar"><span class="layer-name" style="color:${l.tc}">${l.name}</span><span class="layer-tag" style="background:${l.tbg};color:${l.ttc}">${l.tag}</span></div>
+  </div>
+  <div class="detail-panel" id="det-${i}" style="border-left-color:${l.color}"><h4>${l.title}</h4><ul>${l.pts.map(p=>`<li>${p}</li>`).join('')}</ul></div>
+  ${i<layers.length-1?'<div class="flow-arrow">\u25BC</div>':''}`;
+  stack.appendChild(d);
+});
+
+function toggleLayer(i){
+  if(openLayer>=0){document.getElementById(`det-${openLayer}`).classList.remove('open');document.getElementById(`layer-${openLayer}`).classList.remove('active');}
+  if(openLayer!==i){document.getElementById(`det-${i}`).classList.add('open');document.getElementById(`layer-${i}`).classList.add('active');openLayer=i;}else{openLayer=-1;}
+}
+
+const btnC = document.getElementById('wa-btns');
+const panel = document.getElementById('wa-panel');
+let activeWA = -1;
+
+workarounds.forEach((w,i) => {
+  const b = document.createElement('button');
+  b.className = 'wa-btn';
+  b.textContent = w.label;
+  b.onclick = () => showWA(i);
+  btnC.appendChild(b);
+});
+
+function showWA(i){
+  document.querySelectorAll('.wa-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  if(activeWA===i){panel.style.display='none';activeWA=-1;return;}
+  activeWA=i;
+  const w=workarounds[i];
+  panel.style.display='block';
+  panel.innerHTML=`<div class="wa-content">
+    <h4>${w.title}</h4>
+    <div class="wa-sub">${w.sub}</div>
+    <div class="wa-cols">
+      <div class="wa-col solves"><div class="wa-col-label">What it does solve</div><ul>${w.solves.map(s=>`<li>${s}</li>`).join('')}</ul></div>
+      <div class="wa-col fails"><div class="wa-col-label">What it still can't do</div><ul>${w.fails.map(f=>`<li>${f}</li>`).join('')}</ul></div>
+    </div>
+    <div class="wa-fix">${w.fix}</div>
+  </div>`;
+}
+</script>
+</body>
+</html>

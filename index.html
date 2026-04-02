@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneTrackMind</title>
+<style>
+  :root {
+    --bg: #f5f5f0; --card: #fff; --text: #1a1a1a; --sub: #6b6b68; --border: rgba(0,0,0,0.12);
+  }
+  @media(prefers-color-scheme:dark){
+    :root { --bg: #1a1a18; --card: #2a2a28; --text: #e8e6de; --sub: #a8a69e; --border: rgba(255,255,255,0.12); }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); padding: 40px 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+  h1 { font-size: 20px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+  .sub { font-size: 13px; color: var(--sub); margin-bottom: 24px; }
+  .links { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 400px; }
+  a { display: block; padding: 16px 20px; background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; text-decoration: none; color: var(--text); font-size: 15px; font-weight: 500; transition: transform 0.12s; }
+  a:hover { transform: scale(1.02); }
+  a span { display: block; font-size: 12px; font-weight: 400; color: var(--sub); margin-top: 4px; }
+</style>
+</head>
+<body>
+  <h1>OneTrackMind</h1>
+  <div class="sub">Project visuals</div>
+  <div class="links">
+    <a href="/architecture.html">How the system works<span>Seven layers — what each one does and why it matters</span></a>
+    <a href="/roadmap.html">Build roadmap<span>What gets built, in what order, and why</span></a>
+  </div>
+</body>
+</html>
